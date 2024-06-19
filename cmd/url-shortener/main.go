@@ -2,14 +2,13 @@ package main
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
 	"os"
+	"servis/internal/config"
+	"servis/internal/http-server/middleware/logger"
 	"servis/internal/lib/logger/sl"
 	"servis/internal/lib/logger/slogpretty"
 	"servis/internal/storage/sqlite"
-
-	"servis/internal/config"
 )
 
 const (
@@ -43,15 +42,11 @@ func main() {
 	log.Info("save url", slog.Int64("id", id))
 
 	router := chi.NewRouter()
-	router.Use(middleware.RequestID)
-	router.Use(middleware.Logger)
-	//router.Use(middleware.New(log))
-
-	_ = storage
+	router.Use(logger.New(log))
 }
 
 func setupLogger(env string) *slog.Logger {
-	var logger *slog.Logger
+	var log *slog.Logger
 	switch env {
 	case envLocal:
 		opts := slogpretty.PrettyHandlerOptions{
@@ -60,11 +55,11 @@ func setupLogger(env string) *slog.Logger {
 			},
 		}
 		handler := slogpretty.NewPrettyHandler(os.Stdout, opts)
-		logger = slog.New(handler)
+		log = slog.New(handler)
 	case envDev:
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
 	case envProd:
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+		log = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	}
-	return logger
+	return log
 }
